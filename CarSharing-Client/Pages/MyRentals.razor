@@ -1,0 +1,53 @@
+@page "/view-rentals"
+@using CarSharing_Client.Data
+@using CarSharing_Client.Models
+@using CarSharing_Client.Authentication
+@using CarSharing_Client.Components
+
+@inject ILeaseService _leaseService
+@inject IListingService _listingService
+@inject AuthenticationStateProvider _authenticationStateProvider
+
+
+<h3>MyRentals</h3>
+
+
+<div class="row p-1">
+    @if (_leases != null)
+    {
+        foreach (var lease in _leases)
+        {
+            <LeaseCard
+                Lease="@lease"
+                Person="@lease.Listing.Vehicle.Owner"
+                PersonLabel="Owner"
+                CancelLeaseHandler="@(async () => await CancelLeaseAsync(lease.Id))"/>
+        }
+    }
+</div>
+
+
+@code {
+
+    private IList<Lease> _leases;
+    private Customer _customer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _customer = ((CustomAuthenticationStateProvider) _authenticationStateProvider).CachedCustomer;
+
+
+        _leases = await _leaseService.GetLeasesByCustomerCpr(_customer.Cpr);
+    }
+
+    private async Task CancelLeaseAsync(int leaseId)
+    {
+        Lease lease = _leases.FirstOrDefault(l => l.Id == leaseId);
+        if (lease != null)
+        {
+            lease.Canceled = true;
+        }
+        await _leaseService.CancelLeaseAsync(leaseId);
+    }
+
+}

@@ -1,0 +1,52 @@
+@page "/listing-register/{LicenceNo}"
+@using CarSharing_Client.Data
+@using CarSharing_Client.Models
+@using CarSharing_Client.Components
+@inject IListingService _listingService
+@inject IVehicleService _vehicleService
+@inject NavigationManager _navigationManager
+
+
+<ListingForm Listing="@_listing" SubmitHandler="AddListing" CancelHandler="Cancel" ErrorMessage="@_errorMessage"/>
+
+@code {
+
+    private readonly Listing _listing = new()
+    {
+        ListedDate = DateTime.UtcNow,
+        DateFrom = DateTime.UtcNow,
+        DateTo = null
+    };
+    
+    [Parameter]
+    public string LicenceNo { get; set; }
+
+    private string _errorMessage="";
+
+    private async Task AddListing()
+    {
+        _listing.Vehicle = await _vehicleService.GetVehicleAsync(LicenceNo);
+
+        try
+        {
+            _errorMessage = "";
+            if (_listing.DateTo == null)
+            {
+                throw new Exception("Please provide the 'Date to'.");
+            }
+            
+            await _listingService.AddListingAsync(_listing);
+            _navigationManager.NavigateTo("/view-vehicles");
+        }
+        catch (Exception e)
+        {
+            _errorMessage = e.Message;
+        } 
+    }
+
+    private void Cancel()
+    {
+        _navigationManager.NavigateTo("/view-vehicles");
+    }
+
+}

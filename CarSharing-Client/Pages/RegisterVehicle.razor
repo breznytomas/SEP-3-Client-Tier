@@ -1,0 +1,66 @@
+@page "/vehicle-register"
+@using CarSharing_Client.Models
+@using CarSharing_Client.Data
+@using CarSharing_Client.Components
+@using CarSharing_Client.Authentication
+@using Microsoft.Extensions.Caching.Memory
+@using System.Text.RegularExpressions
+@inject IVehicleService _vehicleService;
+@inject NavigationManager _navigationManager; 
+@inject AuthenticationStateProvider _authenticationStateProvider
+@inject IMemoryCache _memoryCache
+
+<h3>Register a new vehicle to your fleet</h3>
+
+<VehicleForm Vehicle="@_car" SubmitHandler="AddVehicle" CancelHandler="Cancel" ErrorMessage="@_errorMessage"/>
+
+
+@code {
+
+    private string _errorMessage = "";
+
+    private readonly Vehicle _car = new()
+    {
+        Transmission = Vehicle.VehicleTransmission.Automatic,
+        FuelType = Vehicle.VehicleFuelType.Petrol,
+        Seats = 5,
+        Type = Vehicle.VehicleType.Sedan,
+        IsApproved = false
+    };
+
+    private async Task AddVehicle()
+    {
+        try
+        {
+            _errorMessage = "";
+            if ( !Regex.IsMatch(_car.LicenseNo, "^[A-Z]{2}\\d{5}$"))
+            {
+                throw new Exception("Invalid license number format. Please use the format 'AA11222'");
+            }
+            
+            _car.Owner = ((CustomAuthenticationStateProvider) _authenticationStateProvider).CachedCustomer;
+            if (_car.Owner == null)
+            {
+                throw new Exception("Error occured. Please try later.");
+            }
+            await _vehicleService.AddVehicleAsync(_car);
+            
+            if (_memoryCache.TryGetValue("vehicles/" + _car.Owner.Cpr, out IList<Vehicle> cacheVehicles))
+            {
+                cacheVehicles.Add(_car);
+            }
+
+            _navigationManager.NavigateTo("/view-vehicles");
+        }
+        catch (Exception e)
+        {
+            _errorMessage = e.Message;
+        }
+    }
+
+    private void Cancel()
+    {
+        _navigationManager.NavigateTo("/view-vehicles");
+    }
+
+}

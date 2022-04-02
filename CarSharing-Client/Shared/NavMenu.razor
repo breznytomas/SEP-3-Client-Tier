@@ -1,0 +1,81 @@
+﻿<div class="top-row pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href="">CarSharing-Client</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="search">
+                <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Search
+            </NavLink>
+        </li>
+
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="login">
+                <AuthorizeView Policy="MustBeLoggedIn">
+                    <Authorized>
+                        <span class="oi oi-lock-unlocked" aria-hidden="true"></span>Logout
+                    </Authorized>
+                    
+                    <NotAuthorized>
+                        <span class="oi oi-lock-locked" aria-hidden="true"></span>Login
+                    </NotAuthorized>
+                </AuthorizeView>
+
+            </NavLink>
+        </li>
+        
+        <AuthorizeView Policy="MustBeCustomer">
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="profile">
+                    <span class="oi oi-person" aria-hidden="true"></span> Your profile
+                </NavLink>
+            </li>
+        </AuthorizeView>
+
+
+        <AuthorizeView Policy="MustBeCustomer">
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="view-vehicles">
+                    <span class="oi oi-spreadsheet" aria-hidden="true"></span> View your fleet
+                </NavLink>
+            </li>
+        </AuthorizeView>
+        
+        <AuthorizeView Policy="MustBeCustomer">
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="view-rentals">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> View rented vehicles
+                </NavLink>
+            </li>
+        </AuthorizeView>
+        
+        <AuthorizeView Policy="MustBeAdmin">
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="approve-vehicles">
+                    <span class="oi oi-check" aria-hidden="true"></span> Approve vehicles
+                </NavLink>
+            </li>
+        </AuthorizeView>
+    </ul>
+</div>
+
+@code {
+    private bool _collapseNavMenu = true;
+
+    private string NavMenuCssClass => _collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        _collapseNavMenu = !_collapseNavMenu;
+    }
+
+}

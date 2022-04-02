@@ -1,0 +1,293 @@
+﻿@page "/search"
+@using Models
+@using Data
+@using Microsoft.Extensions.Caching.Memory
+@using CarSharing_Client.Authentication
+@inject NavigationManager _navigationManager
+@inject IListingService _listingService
+@inject AuthenticationStateProvider _authenticationStateProvider
+@inject IMemoryCache _memoryCache
+
+<h2 class="p-2">Search a car</h2>
+
+<EditForm Model="@_params" OnValidSubmit="@SearchForListing">
+    <div class="card card-registration rounded col-8 m-3">
+        <div class="row p-1">
+            <div class="col-3 p-1 ml-3">
+                <p>
+                    Location:
+                    <InputText class="form-control" @bind-Value="_params.Location"/>
+                </p>
+            </div>
+            <div class="col-3 p-1 ml-3">
+                <p>
+                    Date From:
+                    <input class="form-control" type="datetime-local"
+                           @bind="_params.DateFrom"
+                           @bind:format="yyyy-MM-ddTHH:mm" step="0">
+                </p>
+            </div>
+
+
+            <div class="col-3 p-1 ml-1">
+                <p>
+                    Date To:
+                    <input class="form-control" type="datetime-local"
+                           @bind="_params.DateTo"
+                           @bind:format="yyyy-MM-ddTHH:mm" step="0">
+                </p>
+            </div>
+
+            <div class="col-2 ml-2 mt-4">
+                <p class="actions">
+                    <button class="btn btn-outline-dark " type="submit">Search</button>
+                </p>
+            </div>
+        </div>
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+    </div>
+</EditForm>
+
+<AuthorizeView Policy="MustBeLoggedIn">
+    <NotAuthorized>
+        <hr/>
+        <div class="alert alert-warning col-5 ml-2" role="alert">
+            To rent a vehicle, please first login.
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@if (_errorMessage != "")
+{
+    <div class="alert alert-danger col-5 ml-2" role="alert">
+        @_errorMessage
+    </div>
+}
+
+@if (_listingsToShow != null)
+{
+    <hr/>
+    <div class="row">
+        <div class="form-group col-md-2">
+            <label for="">Transmition</label>
+            <select class="form-control" @oninput="FilterByTransmission">
+                <option value="">Any</option>
+                <option value="@Vehicle.VehicleTransmission.Automatic">@Vehicle.VehicleTransmission.Automatic</option>
+                <option value="@Vehicle.VehicleTransmission.Manual">@Vehicle.VehicleTransmission.Manual</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-2">
+            <label for="">Fuel Type</label>
+            <select class="form-control" @oninput="FilterByFuelType">
+                <option value="">Any</option>
+                <option value="@Vehicle.VehicleFuelType.Petrol">@Vehicle.VehicleFuelType.Petrol</option>
+                <option value="@Vehicle.VehicleFuelType.Diesel">@Vehicle.VehicleFuelType.Diesel</option>
+                <option value="@Vehicle.VehicleFuelType.Hybrid">@Vehicle.VehicleFuelType.Hybrid</option>
+                <option value="@Vehicle.VehicleFuelType.Electric">@Vehicle.VehicleFuelType.Electric</option>
+                <option value="@Vehicle.VehicleFuelType.Hydrogen">@Vehicle.VehicleFuelType.Hydrogen</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-2">
+            <label >Car type</label>
+            <select class="form-control" @oninput="FilterByCarType">
+                <option value="">Any</option>
+                <option value="@Vehicle.VehicleType.Sedan">@Vehicle.VehicleType.Sedan</option>
+                <option value="@Vehicle.VehicleType.Suv">@Vehicle.VehicleType.Suv</option>
+                <option value="@Vehicle.VehicleType.Coupe">@Vehicle.VehicleType.Coupe</option>
+                <option value="@Vehicle.VehicleType.Hatchback">@Vehicle.VehicleType.Hatchback</option>
+                <option value="@Vehicle.VehicleType.PickupTruck">@Vehicle.VehicleType.PickupTruck</option>
+                <option value="@Vehicle.VehicleType.Van">@Vehicle.VehicleType.Van</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-2">
+            <label >Number of seats</label>
+            <select class="form-control" @oninput="FilterBySeats">
+                <option value="">Any</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+            </select>
+        </div>
+
+    </div>
+
+
+    <div class="row">
+
+        @foreach (var listing in _listingsToShow)
+        {
+            <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+                <div class="card text-center">
+                    <div class="member-card">
+                        <div class="card-header p-3">
+                            <span class="iconify " data-icon="fluent:vehicle-car-profile-ltr-16-filled" data-width="30" data-height="30"></span>
+                            <h4>@listing.Vehicle.Brand @listing.Vehicle.Model </h4>
+                            <p class="text-muted">
+                                @listing.Location
+                            </p>
+                            <p>
+                                <strong>Licence number: @listing.Vehicle.LicenseNo</strong>
+                            </p>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <span class="font-weight-light">Price:</span> @listing.Price DKK/Day
+                            </p>
+                            <p class="card-text">
+                                <span class="font-weight-light">Type:</span> @listing.Vehicle.Type
+                            </p>
+
+                            <p class="card-text">
+                                <span class="font-weight-light">Transmition:</span> @listing.Vehicle.Transmission
+                            </p>
+
+                            <p class="card-text">
+                                <span class="font-weight-light">Seats:</span> @listing.Vehicle.Seats
+                            </p>
+
+
+                        </div>
+                        <AuthorizeView Policy="MustBeCustomer">
+                            <div class="card-footer">
+                                <p class="card-text">
+                                    <Button @onclick="@(() => _navigationManager.NavigateTo($"/create-lease/?listingId={listing.Id}&DateFrom={_params.DateFrom}&DateTo={_params.DateTo}"))" class="btn btn-dark">Open listing</Button>
+                                </p>
+
+                            </div>
+                        </AuthorizeView>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private string _errorMessage = "";
+
+    private readonly SearchParams _params = new()
+    {
+        DateFrom = DateTime.Now
+    };
+
+    private readonly FilterParams _filterParams = new();
+
+    private IList<Listing> _listings;
+    private IList<Listing> _listingsToShow;
+    private string _cacheKey;
+
+    protected override void OnInitialized()
+    {
+        Customer customer = ((CustomAuthenticationStateProvider) _authenticationStateProvider).CachedCustomer;
+        if (customer == null) return;
+        _cacheKey = "searchParams/" + customer.Cpr;
+        if (_memoryCache.TryGetValue(_cacheKey, out SearchParams cacheParams))
+        {
+            _params.Location = cacheParams.Location;
+            _params.DateTo = cacheParams.DateTo;
+        }
+    }
+
+    private void FilterByTransmission(ChangeEventArgs evt)
+    {
+        _filterParams.Transmission = null;
+        if (evt.Value != null && evt.Value?.ToString() != "")
+        {
+            _filterParams.Transmission = evt.Value?.ToString();
+        }
+
+        ExecuteFilters();
+    }
+
+    private void FilterByFuelType(ChangeEventArgs evt)
+    {
+        _filterParams.FuelType = null;
+        if (evt.Value != null && evt.Value?.ToString() != "")
+        {
+            _filterParams.FuelType = evt.Value?.ToString();
+        }
+
+        ExecuteFilters();
+    }
+
+    private void FilterByCarType(ChangeEventArgs evt)
+    {
+        _filterParams.CarType = null;
+        if (evt.Value != null && evt.Value?.ToString() != "")
+        {
+            _filterParams.CarType = evt.Value?.ToString();
+        }
+
+        ExecuteFilters();
+    }
+
+    private void FilterBySeats(ChangeEventArgs evt)
+    {
+        _filterParams.NumberOfSeats = null;
+        if (evt.Value != null && evt.Value?.ToString() != "")
+        {
+            _filterParams.NumberOfSeats = int.Parse(evt.Value?.ToString()!);
+        }
+        ExecuteFilters();
+    }
+
+    private void ExecuteFilters()
+    {
+        _listingsToShow = _listings.Where(lis =>
+            (_filterParams.Transmission != null && lis.Vehicle.Transmission == _filterParams.Transmission || _filterParams.Transmission == null) &&
+            (_filterParams.CarType != null && lis.Vehicle.Type == _filterParams.CarType || _filterParams.CarType == null) &&
+            (_filterParams.FuelType != null && lis.Vehicle.FuelType == _filterParams.FuelType || _filterParams.FuelType == null) &&
+            (_filterParams.NumberOfSeats != null && lis.Vehicle.Seats == _filterParams.NumberOfSeats || _filterParams.NumberOfSeats == null)
+            ).ToList();
+    }
+
+    private async Task SearchForListing()
+    {
+        if (_cacheKey != null)
+        {
+            SearchParams cacheParams = new()
+            {
+                Location = _params.Location,
+                DateTo = _params.DateTo
+            };
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(30 * 60));
+
+            _memoryCache.Set(_cacheKey, cacheParams, cacheEntryOptions);
+        }
+
+
+        if (_params.DateFrom != null && _params.DateTo != null)
+        {
+            if (_params.DateFrom >= _params.DateTo)
+            {
+                _errorMessage = "The end date cannot be before the start date";
+                return;
+            }
+
+            _errorMessage = "";
+
+            try
+            {
+                _listings = await _listingService.GetListingsAsync(_params.Location, _params.DateFrom.Value, _params.DateTo.Value);
+                _listingsToShow = _listings;
+            }
+            catch (Exception e)
+            {
+                _errorMessage = e.Message;
+            }
+        }
+    }
+
+
+
+}
